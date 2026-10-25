@@ -10,6 +10,7 @@ sdkconfig.*
 __pycache__/*
 managed_components/
 dependencies.lock
+.idf_cache/
 .gemini/
 sdkconfig.old
 !sdkconfig.defaults

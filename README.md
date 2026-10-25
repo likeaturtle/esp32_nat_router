@@ -115,6 +115,113 @@ idf.py flash monitor
 
 See the [Building](https://github.com/martin-ger/esp32_nat_router/wiki/Building) wiki page for PlatformIO, WT32-ETH01, and multi-target build instructions.
 
+## ESP32-S3 编译与烧录
+
+本章给出 ESP32-S3 从源码编译、烧录到串口监视的完整命令。项目按 **ESP-IDF 5.5.4** 验证通过；不要使用 ESP-IDF 6.x，cJSON 组件（`json`）在 6.x 中已被移除，配置阶段会报 `Failed to resolve component 'json' required by component 'main'`。
+
+### 1. 环境准备
+
+```bash
+# 每开一个新终端都要激活一次（路径按实际安装位置替换）
+source ~/.espressif/tools/activate_idf_v5.5.4.sh
+idf.py --version    # 应输出 ESP-IDF v5.5.4
+```
+
+首次编译时组件管理器会下载 `esp_wireguard`、`led_strip`、`mdns`，需要能访问 GitHub。网络受限时可先设置代理：
+
+```bash
+export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890
+```
+
+组件下载完成后保存在 `managed_components/`（已被 git 忽略），之后重新编译不再需要联网。
+
+### 2. 编译
+
+```bash
+cd esp32_nat_router
+
+idf.py -B build_esp32s3 \
+       -D SDKCONFIG=sdkconfig.esp32s3 \
+       -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.esp32s3" \
+       set-target esp32s3
+
+idf.py -B build_esp32s3 \
+       -D SDKCONFIG=sdkconfig.esp32s3 \
+       build
+```
+
+说明：
+
+- `-B build_esp32s3` 和 `-D SDKCONFIG=sdkconfig.esp32s3` 要在**每次** `idf.py` 调用时都带上，否则会退回默认的 `build/` 和 `sdkconfig`。
+- `sdkconfig.defaults.esp32s3` 是 S3 专用覆盖项，默认把日志控制台放在原生 USB Serial/JTAG 上。
+- 编译产物在 `build_esp32s3/`：`esp32_nat_router.bin`、`bootloader/bootloader.bin`、`partition_table/partition-table.bin`、`ota_data_initial.bin`。
+- 编译结束会打印应用占用 ota_0 的比例；默认分区表下 ota_0 为 1536 KiB。
+- 需要一次编译全部芯片目标时，用 `./build_all_targets.sh`。
+
+### 3. 烧录
+
+先确认端口。多数 S3 开发板有两个 USB 口：
+
+| 接口 | 设备名（macOS） | 用途 |
+|---|---|---|
+| UART（CP2102 / CH340） | `/dev/cu.usbserial-*`、`/dev/cu.wchusbserial-*` | 可烧录；看不到应用日志（控制台在 USB-JTAG） |
+| USB（原生 USB-Serial-JTAG） | `/dev/cu.usbmodem*` | 可烧录，也能看到完整应用日志 |
+
+```bash
+ls /dev/cu.usb*
+```
+
+用 `idf.py` 烧录并打开监视（推荐接原生 USB 口）：
+
+```bash
+idf.py -B build_esp32s3 -D SDKCONFIG=sdkconfig.esp32s3 \
+       -p /dev/cu.usbmodem1101 -b 460800 flash monitor
+```
+
+只更新应用（日常改代码后最快，不动 bootloader 和分区表）：
+
+```bash
+idf.py -B build_esp32s3 -D SDKCONFIG=sdkconfig.esp32s3 \
+       -p /dev/cu.usbmodem1101 app-flash monitor
+```
+
+用 esptool 烧录（等价，便于脚本化）：
+
+```bash
+python -m esptool --chip esp32s3 -p /dev/cu.usbmodem1101 -b 460800 \
+  --before default_reset --after hard_reset write_flash \
+  --flash_mode dio --flash_size detect --flash_freq 80m \
+  0x0     build_esp32s3/bootloader/bootloader.bin \
+  0x8000  build_esp32s3/partition_table/partition-table.bin \
+  0xf000  build_esp32s3/ota_data_initial.bin \
+  0x20000 build_esp32s3/esp32_nat_router.bin
+```
+
+也可以直接使用构建目录里的参数文件：
+
+```bash
+cd build_esp32s3
+python -m esptool --chip esp32s3 -p /dev/cu.usbmodem1101 -b 460800 \
+  --before default_reset --after hard_reset write_flash "@flash_args"
+```
+
+> ESP32-S3 的 bootloader 偏移是 `0x0`（ESP32 才是 `0x1000`），应用位于 `0x20000`，不要混用其他芯片的参数。
+
+### 4. 串口日志与常见问题
+
+- 默认 S3 配置把控制台放在 USB Serial/JTAG（`CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y`）。只接 UART 口时，串口上只能看到 ROM 和二级 bootloader 的日志，看不到应用日志，这属于正常现象，不是烧录失败。
+- 若板子只有 UART 口、又需要应用日志，可把 `sdkconfig.defaults.esp32s3` 改为 UART 控制台，然后重新 `set-target`、`build`、烧录：
+
+  ```
+  CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+  CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=n
+  ```
+
+- 报 `Could not open ... the port is busy`：先退出占用串口的 `monitor`（`Ctrl+]`），或重新插拔 USB 后重试。
+- 连接不上时按住 **BOOT**，点一下 **RST/EN**，松开 BOOT 进入下载模式再烧。
+- 需要彻底清空 Flash：`idf.py -B build_esp32s3 -p /dev/cu.usbmodem1101 erase-flash`。
+- 烧录完成后，连接开放热点 `ESP32_NAT_Router`，浏览器打开 `http://192.168.4.1` 或 `http://esp32-nat-router.local` 进行配置。
+
 ## Performance
 
 The performance of the Router depends on several factors, of course including WiFi signal strength and congestion of the used frequencies. Expect something in the range from 5 - 15 mbps under reasonable conditions. Single video streams should be possible, but it is not intended as a 2$ full replacement for a professional home router.
