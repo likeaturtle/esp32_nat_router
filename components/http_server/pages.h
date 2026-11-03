@@ -1,5 +1,7 @@
 /* Web UI page templates - split into per-page files */
 
+#include "theme.h"
+
 #include "pages/page_index.h"
 #include "pages/page_config.h"
 #include "pages/page_mappings.h"

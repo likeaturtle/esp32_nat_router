@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Style 01 — Instrument · ESP32 NAT Router</title>
+<!--
+  STYLE 01 — INSTRUMENT
+  Direction: a bench instrument / pro network console. Warm neutral paper-grey,
+  hairline rules, deep-green signal accent, monospaced figures, square-ish corners.
+  No gradients, no glow, no emoji. Density is a feature.
+-->
+<style>
+  :root {
+    --bg: #f2f1ec;
+    --surface: #ffffff;
+    --ink: #17181a;
+    --ink-2: #3f4247;
+    --muted: #71757c;
+    --line: #e3e2dc;
+    --line-2: #c9c8c0;
+    --accent: #1a5c4a;
+    --ok: #1a7a55;
+    --danger: #b3261e;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", sans-serif;
+    --r: 4px;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.6 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- top bar ---------- */
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--line); }
+  .topbar-in {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; height: 58px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); min-width: 0; }
+  .brand-mark {
+    width: 28px; height: 28px; flex: 0 0 auto;
+    border: 1px solid var(--ink); border-radius: 2px;
+    display: grid; place-items: center;
+  }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+  .brand-name { font-size: 13px; font-weight: 650; letter-spacing: .01em; white-space: nowrap; }
+  .brand-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: .02em; }
+  .topbar-meta { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+  .topbar-meta .slash { width: 1px; height: 11px; background: var(--line-2); }
+  .logout {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--sans); font-size: 12px; font-weight: 600;
+    color: var(--ink-2); text-decoration: none;
+    border: 1px solid var(--line-2); border-radius: 2px;
+    padding: 5px 9px; background: var(--surface);
+  }
+  .logout:hover { border-color: var(--ink-2); color: var(--ink); }
+
+  /* ---------- page head ---------- */
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 34px 0 20px; }
+  .eyebrow {
+    margin: 0 0 7px; font-family: var(--mono); font-size: 10px;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--muted);
+  }
+  h1 { margin: 0; font-size: 26px; line-height: 1.15; font-weight: 650; letter-spacing: -.02em; }
+  .sub { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
+  .sub b { color: var(--ink-2); font-weight: 600; }
+
+  /* ---------- cards ---------- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    margin: 0 0 14px;
+    overflow: hidden;
+  }
+  .card-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 13px 18px; border-bottom: 1px solid var(--line);
+  }
+  .card-head h2 {
+    margin: 0; font-size: 10.5px; font-weight: 650;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2);
+  }
+  .card-head .meta { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: .08em; text-transform: uppercase;
+    padding: 3px 7px; border: 1px solid; border-radius: 2px;
+  }
+  .pill i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .pill.ok { color: var(--ok); border-color: #bdd8cb; background: #f1f7f3; }
+
+  /* ---------- status rows ---------- */
+  .kv { margin: 0; padding: 3px 18px 10px; }
+  .kv > div {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+    padding: 8.5px 0; border-bottom: 1px solid #f0efe9;
+  }
+  .kv > div:last-child { border-bottom: 0; }
+  .kv dt { color: var(--muted); font-size: 12.5px; flex: 0 0 auto; }
+  .kv dd {
+    margin: 0; text-align: right; font-size: 13px; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .kv dd.mono { font-size: 12px; }
+  .kv .ok-text { color: var(--ok); }
+  .kv .dim { color: var(--muted); }
+
+  /* ---------- nav ---------- */
+  .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 26px; }
+  .nav-tile {
+    display: flex; align-items: center; gap: 9px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+    padding: 11px 12px; min-height: 46px;
+    text-decoration: none; color: var(--ink);
+    font-size: 12.5px; font-weight: 500;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .nav-tile .n { font-family: var(--mono); font-size: 9.5px; color: var(--muted); letter-spacing: .04em; }
+  .nav-tile .arr { margin-left: auto; color: var(--muted); font-family: var(--mono); font-size: 12px; }
+  .nav-tile:hover { border-color: var(--line-2); background: #fbfbf8; }
+  .nav-tile:hover .arr { color: var(--accent); }
+
+  /* ---------- form ---------- */
+  .form { padding: 16px 18px 18px; }
+  .field { margin-bottom: 14px; }
+  .field > label {
+    display: block; margin-bottom: 6px;
+    font-size: 10.5px; font-weight: 600; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .inv { display: flex; gap: 6px; }
+  .field input[type="text"], .field input[type="password"], .field select {
+    width: 100%; height: 38px; padding: 0 10px;
+    border: 1px solid var(--line-2); border-radius: 3px;
+    background: #fff; color: var(--ink);
+    font: 13.5px/1.4 var(--sans);
+    box-shadow: inset 0 1px 0 rgba(20, 20, 20, .03);
+  }
+  .field select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2371757c' stroke-width='1.4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 11px center;
+    padding-right: 30px;
+  }
+  .field input:focus, .field select:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(26, 92, 74, .12);
+  }
+  .field .hint { margin: 5px 0 0; font-size: 11px; color: var(--muted); }
+  .show-btn {
+    flex: 0 0 auto; height: 38px; padding: 0 11px; cursor: pointer;
+    border: 1px solid var(--line-2); border-radius: 3px; background: #fff;
+    font: 600 11px/1 var(--sans); color: var(--ink-2);
+  }
+  .checks { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 4px 0 2px; }
+  .check { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; }
+  .check input[type="checkbox"] {
+    appearance: none; margin: 0; width: 16px; height: 16px; flex: 0 0 auto;
+    border: 1px solid var(--line-2); border-radius: 2px; background: #fff;
+    position: relative; cursor: pointer;
+  }
+  .check input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+  .check input[type="checkbox"]:checked::after {
+    content: ""; position: absolute; left: 4.5px; top: 1px;
+    width: 4px; height: 8px; border: solid #fff; border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+  }
+  .actions { display: flex; gap: 8px; margin-top: 18px; }
+  .actions .btn-primary { flex: 1; }
+  .note { margin: 10px 0 0; font-size: 11px; color: var(--muted); }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    height: 38px; padding: 0 14px; cursor: pointer;
+    border: 1px solid transparent; border-radius: 3px;
+    font: 600 12.5px/1 var(--sans); text-decoration: none;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .btn-primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #000; }
+  .btn-quiet { background: #fff; border-color: var(--line-2); color: var(--ink-2); }
+  .btn-quiet:hover { background: #f7f6f2; border-color: #b3b2aa; }
+  .btn-danger { background: #fff; border-color: #e2b7b3; color: var(--danger); }
+  .btn-danger:hover { background: #fdf4f3; border-color: var(--danger); }
+  .mini {
+    height: 26px; padding: 0 9px; cursor: pointer;
+    border: 1px solid var(--line-2); border-radius: 2px; background: #fff;
+    font: 600 10.5px/1 var(--sans); color: var(--ink-2); white-space: nowrap;
+  }
+  .mini:hover { border-color: var(--ink-2); color: var(--ink); }
+
+  /* ---------- table ---------- */
+  .tbl-wrap { padding: 0 18px 6px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    padding: 9px 8px; text-align: left; white-space: nowrap;
+    font-size: 9.5px; font-weight: 650; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--line);
+  }
+  td { padding: 10px 8px; border-bottom: 1px solid #f1f0ea; font-size: 12.5px; vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  th:first-child, td:first-child { padding-left: 0; }
+  th:last-child, td:last-child { padding-right: 0; text-align: right; }
+  .dev { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex: 0 0 auto; box-shadow: 0 0 0 3px #edf5f1; }
+  .dev .name { font-weight: 500; white-space: nowrap; }
+  .dev small { display: block; margin-top: 1px; font-family: var(--mono); font-size: 9.5px; color: var(--muted); letter-spacing: .01em; }
+  .addr { font-family: var(--mono); font-size: 11px; color: var(--ink-2); white-space: nowrap; }
+  .traffic { font-family: var(--mono); font-size: 10px; color: var(--muted); white-space: nowrap; line-height: 1.5; }
+  .traffic b { display: block; font-weight: 500; color: var(--ink-2); }
+
+  /* ---------- danger ---------- */
+  .card-danger { border-color: #e4c8c5; }
+  .card-danger .card-head { background: #fdf7f6; border-bottom-color: #efdad7; }
+  .danger-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 15px 18px; }
+  .danger-row strong { font-size: 13px; font-weight: 600; }
+  .danger-row p { margin: 3px 0 0; font-size: 11.5px; color: var(--muted); max-width: 36ch; }
+
+  /* ---------- footer ---------- */
+  .foot {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px;
+    margin-top: 6px; padding: 16px 0 40px;
+    border-top: 1px solid var(--line);
+    font-size: 10.5px; color: var(--muted);
+  }
+  .foot a { color: var(--ink-2); }
+  .foot .sep { color: var(--line-2); }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 0 16px; }
+    .topbar-meta .wan, .topbar-meta .slash { display: none; }
+    .page-head { padding: 26px 0 16px; }
+    h1 { font-size: 23px; }
+    .nav-grid { gap: 6px; margin-bottom: 22px; }
+    .nav-tile { padding: 10px; font-size: 12px; }
+    .card-head, .form, .kv, .tbl-wrap { padding-left: 14px; padding-right: 14px; }
+    .danger-row { padding: 14px; }
+    th:nth-child(3), td:nth-child(3) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="brand" href="#">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+          <path d="M2.5 12.5V10M5.8 12.5V7.5M9.1 12.5V4.8M12.4 12.5V2.5"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">ESP32 NAT Router</span>
+        <span class="brand-sub">192.168.4.1</span>
+      </span>
+    </a>
+    <div class="topbar-meta">
+      <span class="wan">WAN 192.168.178.35</span>
+      <span class="slash"></span>
+      <span>v2.4.17</span>
+      <a class="logout" href="#">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 2H2.5A1.5 1.5 0 0 0 1 3.5v5A1.5 1.5 0 0 0 2.5 10H5M8 8.5 10.5 6 8 3.5M10.5 6H4.5"/>
+        </svg>
+        Log out
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Dashboard</p>
+      <h1>System status</h1>
+      <p class="sub">Uplink healthy at <b class="mono">-56 dBm</b> · up 3 d 07:12</p>
+    </div>
+    <a class="btn btn-quiet" href="#" aria-label="Refresh">
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+        <path d="M12 7A5 5 0 1 1 10.5 3.4M12 1.8v3.4H8.6"/>
+      </svg>
+      Refresh
+    </a>
+  </div>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Connection</h2>
+      <span class="pill ok"><i></i>Online</span>
+    </div>
+    <dl class="kv">
+      <div><dt>Access point</dt><dd class="mono">ESP32_NAT_Router</dd></div>
+      <div><dt>AP address</dt><dd class="mono">192.168.4.1</dd></div>
+      <div><dt>Clients</dt><dd>2 associated</dd></div>
+      <div><dt>Uplink</dt><dd>Fritz!Box 7590 <span class="ok-text mono">-56 dBm</span></dd></div>
+      <div><dt>Station address</dt><dd class="mono">192.168.178.35</dd></div>
+      <div><dt>VPN</dt><dd><span class="ok-text">WireGuard connected</span></dd></div>
+      <div><dt>Traffic</dt><dd class="mono">1.42 GB <span class="dim">out</span> / 3.06 GB <span class="dim">in</span></dd></div>
+      <div><dt>Uptime</dt><dd class="mono">03 d 07:12:44</dd></div>
+    </dl>
+  </section>
+
+  <nav class="nav-grid" aria-label="Sections">
+    <a class="nav-tile" href="#"><span class="n">01</span>Getting started<span class="arr">→</span></a>
+    <a class="nav-tile" href="#"><span class="n">02</span>Wi-Fi scan<span class="arr">→</span></a>
+    <a class="nav-tile" href="#"><span class="n">03</span>Configuration<span class="arr">→</span></a>
+    <a class="nav-tile" href="#"><span class="n">04</span>Mappings<span class="arr">→</span></a>
+    <a class="nav-tile" href="#"><span class="n">05</span>Firewall<span class="arr">→</span></a>
+    <a class="nav-tile" href="#"><span class="n">06</span>VPN<span class="arr">→</span></a>
+  </nav>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Wi-Fi uplink</h2>
+      <span class="meta">STA</span>
+    </div>
+    <form class="form" onsubmit="return false">
+      <div class="field">
+        <label for="ssid">Network name</label>
+        <input id="ssid" type="text" value="Fritz!Box 7590" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="pw">Password</label>
+        <div class="inv">
+          <input id="pw" type="password" value="correcthorsebattery">
+          <button type="button" class="show-btn">Show</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="sec">Security</label>
+        <select id="sec">
+          <option>WPA2 / WPA3</option>
+          <option>WPA2 only</option>
+          <option>WPA3 only</option>
+          <option>Open network</option>
+        </select>
+      </div>
+      <div class="checks">
+        <label class="check"><input type="checkbox" checked><span>Remember network</span></label>
+        <label class="check"><input type="checkbox"><span>Hide this SSID</span></label>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-primary">Save &amp; reboot</button>
+        <button type="button" class="btn btn-quiet">Discard</button>
+      </div>
+      <p class="note">Rebooting drops all clients for about 8 seconds.</p>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Connected clients</h2>
+      <span class="meta">2 / 8</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Device</th><th>Address</th><th>Traffic</th><th></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="dev">
+                <span class="dot"></span>
+                <span><span class="name">MacBook Pro</span><small>3C:DC:75:33:01:D8</small></span>
+              </div>
+            </td>
+            <td class="addr">192.168.4.100</td>
+            <td class="traffic"><b>24.8 MB</b>312 MB</td>
+            <td><button type="button" class="mini">Reserve</button></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="dev">
+                <span class="dot"></span>
+                <span><span class="name">iPhone</span><small>A4:CF:12:8E:9B:21</small></span>
+              </div>
+            </td>
+            <td class="addr">192.168.4.101</td>
+            <td class="traffic"><b>4.1 MB</b>38 MB</td>
+            <td><button type="button" class="mini">Reserve</button></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="dev">
+                <span class="dot"></span>
+                <span><span class="name">ESP32-CAM</span><small>84:F3:EB:0A:11:7C</small></span>
+              </div>
+            </td>
+            <td class="addr">192.168.4.102</td>
+            <td class="traffic"><b>1.2 MB</b>0.4 MB</td>
+            <td><button type="button" class="mini">Reserve</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card card-danger">
+    <div class="card-head"><h2>Maintenance</h2></div>
+    <div class="danger-row">
+      <div>
+        <strong>Reboot device</strong>
+        <p>Applies pending settings. Every client is disconnected.</p>
+      </div>
+      <button type="button" class="btn btn-danger">Reboot</button>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span class="mono">v2.4.17</span><span class="sep">/</span>
+    <span>built 06 Oct 2026</span><span class="sep">/</span>
+    <span class="mono">ESP-IDF v5.5.2</span><span class="sep">/</span>
+    <a href="#">Source</a>
+  </footer>
+</main>
+
+</body>
+</html>

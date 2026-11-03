@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Style 03 — Native · ESP32 NAT Router</title>
+<!--
+  STYLE 03 — NATIVE SETTINGS
+  Direction: the platform people already know. iOS/macOS grouped lists, system
+  blue, SF type scale, real switches, inset separators, 10px radii. Familiar
+  beats clever: nothing needs to be learned, nothing looks generated.
+-->
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --card: #ffffff;
+    --ink: #1c1c1e;
+    --ink-2: #3c3c43;
+    --muted: #6c6c70;
+    --muted-2: #8e8e93;
+    --sep: rgba(60, 60, 67, .29);
+    --blue: #007aff;
+    --green: #34c759;
+    --red: #ff3b30;
+    --orange: #ff9500;
+    --teal: #30b0c7;
+    --indigo: #5856d6;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "PingFang SC", "Helvetica Neue", sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.35 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .wrap { max-width: 620px; margin: 0 auto; padding-bottom: 40px; }
+
+  /* ---------- nav bar ---------- */
+  .navbar {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 46px; padding: 0 16px;
+    background: rgba(249, 249, 249, .92);
+    border-bottom: .5px solid var(--sep);
+  }
+  .nav-title { font-size: 15px; font-weight: 600; color: var(--ink-2); }
+  .nav-link { font-size: 15px; color: var(--blue); }
+  .nav-left { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500; color: var(--muted); }
+  .nav-left .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+
+  /* ---------- large title ---------- */
+  .head { padding: 22px 16px 2px; }
+  .head .eyebrow {
+    margin: 0 0 3px; font-size: 12px; font-weight: 600;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2);
+  }
+  .head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  h1 { margin: 0; font-size: 34px; line-height: 1.15; font-weight: 700; letter-spacing: -.022em; }
+  .head .sub { margin: 5px 0 0; font-size: 14px; color: var(--muted); }
+  .live {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 13px; font-weight: 600; color: #248a3d;
+    background: rgba(52, 199, 89, .12); border-radius: 20px;
+    padding: 4px 10px; white-space: nowrap;
+  }
+  .live i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+  /* ---------- groups ---------- */
+  .group { margin-top: 24px; }
+  .group-label {
+    margin: 0 16px 7px 32px; font-size: 12.5px; font-weight: 600;
+    letter-spacing: .055em; text-transform: uppercase; color: var(--muted);
+  }
+  .group-foot { margin: 6px 16px 0 32px; font-size: 12px; line-height: 1.4; color: var(--muted-2); }
+  .list {
+    background: var(--card); border-radius: 10px; overflow: hidden;
+    margin: 0 16px;
+  }
+  .row {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    min-height: 44px; padding: 10px 16px;
+    border-bottom: 0;
+    position: relative;
+  }
+  .row::after {
+    content: ""; position: absolute; left: 16px; right: 0; bottom: 0;
+    height: .5px; background: var(--sep); pointer-events: none;
+  }
+  .row:last-child::after { display: none; }
+  .nav-row::after { left: 60px; }
+  .row-label { font-size: 16.5px; color: var(--ink); flex: 0 0 auto; }
+  .row-value { font-size: 16.5px; color: var(--muted); text-align: right; }
+  .row-value .mono { font-size: 14.5px; color: var(--ink-2); }
+  .row-value strong { font-weight: 400; color: var(--ink-2); }
+  .row-value em { font-style: normal; color: var(--green); }
+  .row .good { color: #248a3d; font-weight: 500; }
+
+  /* nav rows with icon tiles */
+  .nav-row { text-decoration: none; color: var(--ink); }
+  .nav-row:active { background: #e5e5ea; }
+  .icon-tile {
+    width: 30px; height: 30px; flex: 0 0 auto;
+    border-radius: 7px; display: grid; place-items: center; color: #fff;
+  }
+  .icon-tile svg { display: block; }
+  .nav-row .row-label { flex: 1; }
+  .chev { color: #c4c4c8; font-size: 20px; line-height: 1; font-weight: 300; margin-left: -2px; }
+  .blue { background: var(--blue); }
+  .teal { background: var(--teal); }
+  .orange { background: var(--orange); }
+  .indigo { background: var(--indigo); }
+  .red { background: var(--red); }
+  .gray { background: #8e8e93; }
+
+  /* form rows */
+  .form-row { padding-top: 8px; padding-bottom: 8px; }
+  .form-row > label { flex: 0 0 42%; font-size: 16px; color: var(--ink); }
+  .form-row input[type="text"], .form-row input[type="password"], .form-row select {
+    flex: 1 1 auto; min-width: 0; height: 32px; padding: 0;
+    border: 0; background: transparent; color: var(--ink-2);
+    font: 16px/1 var(--sans); text-align: right;
+  }
+  .form-row input:focus, .form-row select:focus { outline: none; }
+  .form-row select {
+    appearance: none; padding-right: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='11'%3E%3Cpath d='M1 1l5 4.5L1 10' fill='none' stroke='%23c4c4c8' stroke-width='1.6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 2px center;
+  }
+  .form-row .row-value { font-size: 15px; }
+
+  /* switch */
+  .switch { position: relative; display: inline-block; width: 51px; height: 31px; flex: 0 0 auto; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 2; }
+  .switch span {
+    position: absolute; inset: 0; border-radius: 16px; background: #e9e9eb;
+    transition: background .18s ease;
+  }
+  .switch span::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px;
+    border-radius: 50%; background: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .18);
+    transition: transform .18s ease;
+  }
+  .switch input:checked + span { background: var(--green); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+
+  /* action rows */
+  .action-row {
+    width: 100%; display: block; text-align: center;
+    background: none; border: 0; border-bottom: .5px solid var(--sep);
+    padding: 13px 16px; font: 400 16.5px/1.2 var(--sans); color: var(--blue);
+    cursor: pointer;
+  }
+  .action-row:last-child { border-bottom: 0; }
+  .action-row:active { background: #e5e5ea; }
+  .action-row.strong { font-weight: 600; }
+  .action-row.destructive { color: var(--red); }
+
+  /* clients */
+  .client-row { align-items: center; }
+  .client-main { min-width: 0; }
+  .client-main strong { display: block; font-size: 16px; font-weight: 400; color: var(--ink); }
+  .client-main small { display: block; margin-top: 2px; font-family: var(--mono); font-size: 10.5px; color: var(--muted-2); letter-spacing: -.02em; }
+  .client-traffic { text-align: right; font-family: var(--mono); font-size: 10.5px; line-height: 1.5; color: var(--muted-2); white-space: nowrap; }
+  .client-traffic b { display: block; font-weight: 500; color: var(--ink-2); }
+
+  /* ---------- footer ---------- */
+  .foot {
+    margin: 30px 16px 0; padding-top: 14px; border-top: .5px solid var(--sep);
+    text-align: center; font-size: 11.5px; line-height: 1.7; color: var(--muted-2);
+  }
+  .foot .mono { font-size: 10.5px; }
+
+  @media (max-width: 480px) {
+    h1 { font-size: 30px; }
+    .form-row > label { flex-basis: 40%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="navbar">
+    <span class="nav-left"><span class="dot"></span>Online</span>
+    <span class="nav-title">ESP32 NAT Router</span>
+    <a class="nav-link" href="#">Log out</a>
+  </div>
+
+  <main>
+    <header class="head">
+      <p class="eyebrow">Dashboard</p>
+      <div class="head-row">
+        <h1>Status</h1>
+        <span class="live"><i></i>Healthy</span>
+      </div>
+      <p class="sub"><span class="mono">192.168.4.1</span> · v2.4.17 · up 3 d 07:12</p>
+    </header>
+
+    <section class="group" aria-labelledby="g-conn">
+      <h2 class="group-label" id="g-conn">Connection</h2>
+      <div class="list">
+        <div class="row"><span class="row-label">Access point</span><span class="row-value">ESP32_NAT_Router</span></div>
+        <div class="row"><span class="row-label">AP address</span><span class="row-value mono">192.168.4.1</span></div>
+        <div class="row"><span class="row-label">Clients</span><span class="row-value">2 of 8</span></div>
+        <div class="row"><span class="row-label">Uplink</span><span class="row-value"><strong>Fritz!Box 7590</strong> · <em>−56 dBm</em></span></div>
+        <div class="row"><span class="row-label">Station IP</span><span class="row-value mono">192.168.178.35</span></div>
+        <div class="row"><span class="row-label">VPN</span><span class="row-value good">WireGuard · connected</span></div>
+        <div class="row"><span class="row-label">Traffic</span><span class="row-value mono">1.42 GB ↑ · 3.06 GB ↓</span></div>
+      </div>
+      <p class="group-foot">Uptime 03 d 07:12:44 · heap 148 KB free</p>
+    </section>
+
+    <section class="group" aria-labelledby="g-nav">
+      <h2 class="group-label" id="g-nav">Manage</h2>
+      <div class="list">
+        <a class="row nav-row" href="#">
+          <span class="icon-tile blue"><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 10 3l7 5.5V16a1 1 0 0 1-1 1h-3.5v-5h-5v5H4a1 1 0 0 1-1-1V8.5Z"/></svg></span>
+          <span class="row-label">Getting started</span><span class="chev">›</span>
+        </a>
+        <a class="row nav-row" href="#">
+          <span class="icon-tile teal"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M10 10h.01"/><path d="M6.8 13.2a4.5 4.5 0 0 1 0-6.4M13.2 6.8a4.5 4.5 0 0 1 0 6.4"/><path d="M4 16a8.5 8.5 0 0 1 0-12M16 4a8.5 8.5 0 0 1 0 12"/></svg></span>
+          <span class="row-label">Wi-Fi scan</span><span class="chev">›</span>
+        </a>
+        <a class="row nav-row" href="#">
+          <span class="icon-tile orange"><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 6h9M16 6h1M3 14h3M10 14h7"/><circle cx="14" cy="6" r="1.8"/><circle cx="8" cy="14" r="1.8"/></svg></span>
+          <span class="row-label">Configuration</span><span class="chev">›</span>
+        </a>
+        <a class="row nav-row" href="#">
+          <span class="icon-tile indigo"><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11M12 4l3 3-3 3M16 13H5M8 10l-3 3 3 3"/></svg></span>
+          <span class="row-label">Mappings</span><span class="chev">›</span>
+        </a>
+        <a class="row nav-row" href="#">
+          <span class="icon-tile red"><svg width="16" height="17" viewBox="0 0 18 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9 2 15.5 4.5v5.2c0 3.7-2.7 6.7-6.5 8.3-3.8-1.6-6.5-4.6-6.5-8.3V4.5L9 2Z"/><path d="m6.5 9.5 1.8 1.8 3.4-3.6" stroke-linecap="round"/></svg></span>
+          <span class="row-label">Firewall</span><span class="chev">›</span>
+        </a>
+        <a class="row nav-row" href="#">
+          <span class="icon-tile gray"><svg width="14" height="17" viewBox="0 0 16 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="8" width="12" height="9" rx="2"/><path d="M5 8V5.5a3 3 0 0 1 6 0V8"/></svg></span>
+          <span class="row-label">VPN</span><span class="chev">›</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="group" aria-labelledby="g-wifi">
+      <h2 class="group-label" id="g-wifi">Wi-Fi uplink</h2>
+      <div class="list">
+        <div class="row form-row"><label for="ssid">Network</label><input id="ssid" type="text" value="Fritz!Box 7590" spellcheck="false"></div>
+        <div class="row form-row"><label for="pw">Password</label><input id="pw" type="password" value="correcthorsebattery"></div>
+        <div class="row form-row"><label for="sec">Security</label>
+          <select id="sec">
+            <option>WPA2 / WPA3</option>
+            <option>WPA2 only</option>
+            <option>WPA3 only</option>
+            <option>Open network</option>
+          </select>
+        </div>
+        <div class="row"><span class="row-label">Hide SSID</span>
+          <label class="switch"><input type="checkbox"><span></span></label>
+        </div>
+      </div>
+      <div class="list" style="margin-top: 10px;">
+        <button type="button" class="action-row strong">Save &amp; Restart</button>
+      </div>
+      <p class="group-foot">Restarting disconnects all clients for about 8 seconds.</p>
+    </section>
+
+    <section class="group" aria-labelledby="g-clients">
+      <h2 class="group-label" id="g-clients">Connected clients</h2>
+      <div class="list">
+        <div class="row client-row">
+          <div class="client-main"><strong>MacBook Pro</strong><small>3C:DC:75:33:01:D8 · 192.168.4.100</small></div>
+          <div class="client-traffic"><b>312 MB ↓</b>24.8 MB ↑</div>
+        </div>
+        <div class="row client-row">
+          <div class="client-main"><strong>iPhone</strong><small>A4:CF:12:8E:9B:21 · 192.168.4.101</small></div>
+          <div class="client-traffic"><b>38 MB ↓</b>4.1 MB ↑</div>
+        </div>
+        <div class="row client-row">
+          <div class="client-main"><strong>ESP32-CAM</strong><small>84:F3:EB:0A:11:7C · 192.168.4.102</small></div>
+          <div class="client-traffic"><b>0.4 MB ↓</b>1.2 MB ↑</div>
+        </div>
+      </div>
+      <p class="group-foot">Tap a client on the Mappings page to reserve its address.</p>
+    </section>
+
+    <section class="group">
+      <div class="list">
+        <button type="button" class="action-row destructive">Reboot Device</button>
+      </div>
+      <p class="group-foot">Applies pending settings. Every client is disconnected.</p>
+    </section>
+
+    <footer class="foot">
+      <span class="mono">v2.4.17</span> · built 06 Oct 2026<br>
+      ESP-IDF v5.5.2 · <a href="#">Source code</a>
+    </footer>
+  </main>
+</div>
+
+</body>
+</html>

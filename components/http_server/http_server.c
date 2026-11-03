@@ -37,6 +37,7 @@
 #include "lwip/sockets.h"
 
 #include "pages.h"
+#include "theme_css.h"
 #include "favicon_png.h"
 #include "router_globals.h"
 #include "vpn_config.h"
@@ -1203,6 +1204,22 @@ static const httpd_uri_t favicon_uri = {
     .user_ctx  = NULL
 };
 
+/* Shared stylesheet. Kept out of the chunked page templates so every page
+ * renders from one file and the pages stay small. */
+static esp_err_t theme_css_get_handler(httpd_req_t *req) {
+    httpd_resp_set_type(req, "text/css; charset=utf-8");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
+    httpd_resp_send(req, theme_css, theme_css_len);
+    return ESP_OK;
+}
+
+static const httpd_uri_t theme_css_uri = {
+    .uri       = "/style.css",
+    .method    = HTTP_GET,
+    .handler   = theme_css_get_handler,
+    .user_ctx  = NULL
+};
+
 /* Index page GET handler - System Status with navigation */
 static esp_err_t index_get_handler(httpd_req_t *req)
 {
@@ -1322,10 +1339,7 @@ static esp_err_t index_get_handler(httpd_req_t *req)
 
     /* Stream logout button if authenticated */
     if (authenticated) {
-        SEND_CHUNK(req,
-            "<div style='text-align: right; margin-bottom: 0.5rem;'>"
-            "<a href='/?logout=1' style='padding: 0.4rem 1rem; background: rgba(255,82,82,0.15); color: #ff5252; border: 1px solid #ff5252; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500;'>Logout</a>"
-            "</div>", HTTPD_RESP_USE_STRLEN);
+        SEND_CHUNK(req, THEME_LOGOUT, HTTPD_RESP_USE_STRLEN);
     }
 
     /* Open status table */
@@ -1334,44 +1348,44 @@ static esp_err_t index_get_handler(httpd_req_t *req)
     /* Stream AP status rows */
     if (ap_disabled) {
         SEND_CHUNK(req,
-            "<tr><td>AP Interface:</td><td><strong style='color:#ff5252;'>Disabled</strong></td></tr>",
+            "<tr><td>AP interface</td><td><span class='bad-text'>Disabled</span></td></tr>",
             HTTPD_RESP_USE_STRLEN);
     } else {
         char* safe_ap_ssid = html_escape(ap_ssid);
         if (safe_ap_ssid == NULL) safe_ap_ssid = strdup("(unknown)");
-        snprintf(row, sizeof(row), "<tr><td>SSID:</td><td><strong>%s</strong></td></tr>", safe_ap_ssid);
+        snprintf(row, sizeof(row), "<tr><td>Access point</td><td class='mono'>%s</td></tr>", safe_ap_ssid);
         /* Free before SEND_CHUNK: a bail-out on a dead client returns immediately. */
         free(safe_ap_ssid);
         SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
 
         esp_ip4_addr_t ap_addr;
         ap_addr.addr = my_ap_ip;
-        snprintf(row, sizeof(row), "<tr><td>AP IP:</td><td>" IPSTR "</td></tr>", IP2STR(&ap_addr));
+        snprintf(row, sizeof(row), "<tr><td>AP address</td><td class='mono'>" IPSTR "</td></tr>", IP2STR(&ap_addr));
         SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
 
         resync_connect_count();
-        snprintf(row, sizeof(row), "<tr><td>AP Clients:</td><td>%d</td></tr>", connect_count);
+        snprintf(row, sizeof(row), "<tr><td>Clients</td><td>%d associated</td></tr>", connect_count);
         SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
     }
 
     /* Stream Uplink row */
 #if CONFIG_ETH_UPLINK
     if (ap_connect) {
-        SEND_CHUNK(req, "<tr><td>Uplink:</td><td><strong>Ethernet Connected</strong></td></tr>", HTTPD_RESP_USE_STRLEN);
+        SEND_CHUNK(req, "<tr><td>Uplink</td><td><span class='ok-text'>Ethernet connected</span></td></tr>", HTTPD_RESP_USE_STRLEN);
     } else {
-        SEND_CHUNK(req, "<tr><td>Uplink:</td><td><strong>Ethernet Disconnected</strong></td></tr>", HTTPD_RESP_USE_STRLEN);
+        SEND_CHUNK(req, "<tr><td>Uplink</td><td><span class='bad-text'>Ethernet disconnected</span></td></tr>", HTTPD_RESP_USE_STRLEN);
     }
 #else
     if (ap_connect) {
         wifi_ap_record_t ap_info;
         if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
-            snprintf(row, sizeof(row), "<tr><td>Uplink:</td><td><strong>Connected (%d dBm)</strong></td></tr>", ap_info.rssi);
+            snprintf(row, sizeof(row), "<tr><td>Uplink</td><td><span class='ok-text'>Connected</span> <span class='muted-text mono'>(%d dBm)</span></td></tr>", ap_info.rssi);
             SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
         } else {
-            SEND_CHUNK(req, "<tr><td>Uplink:</td><td><strong>Connected</strong></td></tr>", HTTPD_RESP_USE_STRLEN);
+            SEND_CHUNK(req, "<tr><td>Uplink</td><td><span class='ok-text'>Connected</span></td></tr>", HTTPD_RESP_USE_STRLEN);
         }
     } else {
-        SEND_CHUNK(req, "<tr><td>Uplink:</td><td><strong>Disconnected</strong></td></tr>", HTTPD_RESP_USE_STRLEN);
+        SEND_CHUNK(req, "<tr><td>Uplink</td><td><span class='bad-text'>Disconnected</span></td></tr>", HTTPD_RESP_USE_STRLEN);
     }
 #endif
 
@@ -1380,15 +1394,15 @@ static esp_err_t index_get_handler(httpd_req_t *req)
         esp_ip4_addr_t addr;
         addr.addr = my_ip;
 #if CONFIG_ETH_UPLINK
-        snprintf(row, sizeof(row), "<tr><td>ETH IP:</td><td>" IPSTR "</td></tr>", IP2STR(&addr));
+        snprintf(row, sizeof(row), "<tr><td>Ethernet address</td><td class='mono'>" IPSTR "</td></tr>", IP2STR(&addr));
 #else
-        snprintf(row, sizeof(row), "<tr><td>STA IP:</td><td>" IPSTR "</td></tr>", IP2STR(&addr));
+        snprintf(row, sizeof(row), "<tr><td>Station address</td><td class='mono'>" IPSTR "</td></tr>", IP2STR(&addr));
 #endif
     } else {
 #if CONFIG_ETH_UPLINK
-        snprintf(row, sizeof(row), "<tr><td>ETH IP:</td><td>N/A</td></tr>");
+        snprintf(row, sizeof(row), "<tr><td>Ethernet address</td><td class='muted-text'>N/A</td></tr>");
 #else
-        snprintf(row, sizeof(row), "<tr><td>STA IP:</td><td>N/A</td></tr>");
+        snprintf(row, sizeof(row), "<tr><td>Station address</td><td class='muted-text'>N/A</td></tr>");
 #endif
     }
     SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
@@ -1396,11 +1410,11 @@ static esp_err_t index_get_handler(httpd_req_t *req)
     /* Stream VPN status row */
     if (vpn_enabled) {
         if (vpn_is_connected()) {
-            snprintf(row, sizeof(row), "<tr><td>VPN:</td><td><span style='color: #4caf50;'>Connected</span></td></tr>");
+            snprintf(row, sizeof(row), "<tr><td>VPN</td><td><span class='ok-text'>WireGuard connected</span></td></tr>");
         } else if (vpn_connected) {
-            snprintf(row, sizeof(row), "<tr><td>VPN:</td><td><span style='color: #ffc107;'>Handshake Pending</span></td></tr>");
+            snprintf(row, sizeof(row), "<tr><td>VPN</td><td><span class='warn-text'>Handshake pending</span></td></tr>");
         } else {
-            snprintf(row, sizeof(row), "<tr><td>VPN:</td><td><span style='color: #f44336;'>Disconnected</span></td></tr>");
+            snprintf(row, sizeof(row), "<tr><td>VPN</td><td><span class='bad-text'>Disconnected</span></td></tr>");
         }
         SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
     }
@@ -1411,7 +1425,7 @@ static esp_err_t index_get_handler(httpd_req_t *req)
     char sent_buf[16], recv_buf[16];
     format_bytes_human(bytes_sent, sent_buf, sizeof(sent_buf));
     format_bytes_human(bytes_received, recv_buf, sizeof(recv_buf));
-    snprintf(row, sizeof(row), "<tr><td>Bytes:</td><td>%s sent / %s received</td></tr>", sent_buf, recv_buf);
+    snprintf(row, sizeof(row), "<tr><td>Traffic</td><td><span class='mono'>%s</span> out <span class='muted-text'>/</span> <span class='mono'>%s</span> in</td></tr>", sent_buf, recv_buf);
     SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
 
     /* Stream Monitoring row */
@@ -1419,12 +1433,12 @@ static esp_err_t index_get_handler(httpd_req_t *req)
     if (mode != PCAP_MODE_OFF) {
         const char* mode_name = (mode == PCAP_MODE_ACL_MONITOR) ? "ACL Monitor" : "Promiscuous";
         snprintf(row, sizeof(row),
-                 "<tr><td>Monitoring:</td><td><span style='color: #4caf50;'>%s</span> (%lu captured, %lu dropped)</td></tr>",
+                 "<tr><td>Monitoring</td><td><span class='ok-text'>%s</span> <span class='muted-text'>(%lu captured, %lu dropped)</span></td></tr>",
                  mode_name,
                  (unsigned long)pcap_get_captured_count(),
                  (unsigned long)pcap_get_dropped_count());
     } else {
-        snprintf(row, sizeof(row), "<tr><td>Monitoring:</td><td><span style='color: #888;'>Off</span></td></tr>");
+        snprintf(row, sizeof(row), "<tr><td>Monitoring</td><td><span class='muted-text'>Off</span></td></tr>");
     }
     SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
 
@@ -1433,7 +1447,7 @@ static esp_err_t index_get_handler(httpd_req_t *req)
     format_uptime(get_uptime_seconds(), uptime_str, sizeof(uptime_str));
     char boot_time_str[32];
     format_boot_time(boot_time_str, sizeof(boot_time_str));
-    snprintf(row, sizeof(row), "<tr><td>Uptime:</td><td>%s (since %s)</td></tr>", uptime_str, boot_time_str);
+    snprintf(row, sizeof(row), "<tr><td>Uptime</td><td>%s<span class='hint-block'>since %s</span></td></tr>", uptime_str, boot_time_str);
     SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
 
     /* Close status table */
@@ -1446,62 +1460,57 @@ static esp_err_t index_get_handler(httpd_req_t *req)
 
     /* Show message if any */
     if (login_message[0] != '\0') {
-        const char* msg_style;
-        if (strstr(login_message, "ERROR") != NULL) {
-            msg_style = "background: #ffebee; color: #c62828; border: 2px solid #ef5350";
-        } else {
-            msg_style = "background: #e8f5e9; color: #2e7d32; border: 2px solid #66bb6a";
-        }
+        bool is_error = strstr(login_message, "ERROR") != NULL;
+        const char *msg_text = login_message;
+        if (is_error && strncmp(msg_text, "ERROR: ", 7) == 0) msg_text += 7;
         snprintf(row, sizeof(row),
-                 "<div style='margin-top: 1.5rem; padding: 1rem; %s; border-radius: 8px; font-size: 0.95rem;'>%s</div>",
-                 msg_style, login_message);
+                 "<div class='callout %s'>%s</div>",
+                 is_error ? "callout-error" : "callout-ok", msg_text);
         SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
     }
 
     /* Show warning if no password protection */
     if (!password_protection_enabled) {
         SEND_CHUNK(req,
-            "<div style='margin-top: 1.5rem; padding: 1rem; background: #fff3cd; border: 2px solid #ffa726; border-radius: 8px;'>"
-            "<strong style='color: #f57c00;'>⚠ No Password Protection</strong>"
-            "<p style='margin-top: 0.5rem; color: #666; font-size: 0.9rem;'>Anyone on this network can access router settings. Set a password below.</p>"
+            "<div class='callout callout-warn'>"
+            "<strong>No password protection</strong>"
+            "<p>Anyone on this network can access router settings. Set a password below.</p>"
             "</div>", HTTPD_RESP_USE_STRLEN);
     }
 
     /* Show login form if password is set and not authenticated */
     if (password_protection_enabled && !authenticated) {
         SEND_CHUNK(req,
-            "<div style='margin-top: 1.5rem; padding: 1.5rem; background: rgba(22, 33, 62, 0.6); border: 1px solid rgba(0, 217, 255, 0.2); border-radius: 12px;'>"
-            "<h2 style='margin-top: 0; margin-bottom: 1rem; color: #00d9ff; font-size: 1.1rem;'>🔒 Login Required</h2>"
-            "<form action='/' method='POST'>"
+            "<div class='card'>"
+            "<div class='card-head'><h2>Access</h2><span class='meta'>password required</span></div>"
+            "<form class='auth-form' action='/' method='POST'>"
             /* Hidden username field gives iOS/Safari and password managers an account
              * to associate the saved password with, so AutoFill works on this
              * password-only login instead of demanding a username. */
             "<input type='text' name='username' value='admin' autocomplete='username' style='display:none' aria-hidden='true' tabindex='-1'/>"
-            "<input type='password' name='login_password' placeholder='Enter password' autocomplete='current-password' style='width: 100%; padding: 0.75rem; margin-bottom: 0.75rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(0,217,255,0.3); border-radius: 8px; color: #e0e0e0; font-size: 1rem;'/>"
-            "<input type='submit' value='Login' style='width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer;'/>"
+            "<label for='login_password'>Password</label>"
+            "<input id='login_password' type='password' name='login_password' placeholder='Enter password' autocomplete='current-password'/>"
+            "<button type='submit' class='ok-button'>Log in</button>"
             "</form>"
             "</div>", HTTPD_RESP_USE_STRLEN);
     }
 
     /* Show password management form if authenticated or no password set */
     if (authenticated || !password_protection_enabled) {
-        const char* form_title = password_protection_enabled ? "Change Password" : "Set Password";
+        const char* form_title = password_protection_enabled ? "Change password" : "Set password";
         SEND_CHUNK(req,
-            "<div style='margin-top: 1.5rem; padding: 1.5rem; background: rgba(22, 33, 62, 0.6); border: 1px solid rgba(0, 217, 255, 0.2); border-radius: 12px;'>"
-            "<h2 style='margin-top: 0; margin-bottom: 1rem; color: #00d9ff; font-size: 1.1rem;'>🔑 ", HTTPD_RESP_USE_STRLEN);
+            "<div class='card'>"
+            "<div class='card-head'><h2>Password</h2><span class='meta'>web UI</span></div>"
+            "<form class='auth-form' action='/' method='POST'>"
+            "<label for='new_password'>New password</label>"
+            "<input id='new_password' type='password' name='new_password' placeholder='Leave empty to disable' autocomplete='new-password'/>"
+            "<label for='confirm_password'>Confirm password</label>"
+            "<input id='confirm_password' type='password' name='confirm_password' placeholder='Repeat password' autocomplete='new-password'/>"
+            "<button type='submit' class='ok-button'>", HTTPD_RESP_USE_STRLEN);
         SEND_CHUNK(req, form_title, HTTPD_RESP_USE_STRLEN);
         SEND_CHUNK(req,
-            "</h2>"
-            /* POST keeps the new password out of the URL and makes the Origin-header
-             * CSRF check effective (browsers send Origin on POST but not GET). */
-            "<form action='/' method='POST'>"
-            "<input type='password' name='new_password' placeholder='New password (empty to disable)' autocomplete='new-password' style='width: 100%; padding: 0.75rem; margin-bottom: 0.75rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(0,217,255,0.3); border-radius: 8px; color: #e0e0e0; font-size: 1rem;'/>"
-            "<input type='password' name='confirm_password' placeholder='Confirm password' autocomplete='new-password' style='width: 100%; padding: 0.75rem; margin-bottom: 0.75rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(0,217,255,0.3); border-radius: 8px; color: #e0e0e0; font-size: 1rem;'/>"
-            "<input type='submit' value='", HTTPD_RESP_USE_STRLEN);
-        SEND_CHUNK(req, form_title, HTTPD_RESP_USE_STRLEN);
-        SEND_CHUNK(req,
-            "' style='width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer;'/>"
-            "<p style='margin-top: 0.75rem; color: #888; font-size: 0.85rem;'>Leave empty to disable password protection.</p>"
+            "</button>"
+            "<p class='hint'>Leave empty to disable password protection.</p>"
             "</form>"
             "</div>", HTTPD_RESP_USE_STRLEN);
     }
@@ -2107,26 +2116,26 @@ static esp_err_t config_get_handler(httpd_req_t *req)
 
     switch (rc_status.state) {
         case RC_STATE_DISABLED:
-            rc_status_color = "#888";
+            rc_status_color = "muted-text";
             rc_status_text = "Disabled";
             break;
         case RC_STATE_LISTENING:
-            rc_status_color = "#4caf50";
+            rc_status_color = "ok-text";
             rc_status_text = "Listening";
             break;
         case RC_STATE_AUTH_WAIT:
-            rc_status_color = "#ffc107";
+            rc_status_color = "warn-text";
             rc_status_text = "Authenticating...";
             break;
         case RC_STATE_ACTIVE:
-            rc_status_color = "#00d9ff";
+            rc_status_color = "ok-text";
             rc_status_text = rc_status.client_ip;
             snprintf(rc_kick_buf, sizeof(rc_kick_buf),
-                " <a href='/config?rc_kick=1' style='margin-left: 0.5rem; padding: 0.2rem 0.6rem; background: #f44336; color: #fff; border-radius: 4px; text-decoration: none; font-size: 0.8rem;'>Kick</a>");
+                " <a href='/config?rc_kick=1' class='mini-action'>Kick</a>");
             rc_kick_section = rc_kick_buf;
             break;
         default:
-            rc_status_color = "#888";
+            rc_status_color = "muted-text";
             rc_status_text = "Unknown";
             break;
     }
@@ -2141,7 +2150,7 @@ static esp_err_t config_get_handler(httpd_req_t *req)
     const char* pcap_mode_acl_sel = (pcap_mode == PCAP_MODE_ACL_MONITOR) ? "selected" : "";
     const char* pcap_mode_promisc_sel = (pcap_mode == PCAP_MODE_PROMISCUOUS) ? "selected" : "";
     bool pcap_client = pcap_client_connected();
-    const char* pcap_client_color = pcap_client ? "#4caf50" : "#888";
+    const char* pcap_client_color = pcap_client ? "ok-text" : "muted-text";
     const char* pcap_client_text = pcap_client ? "Connected" : "Not connected";
     uint32_t pcap_captured = pcap_get_captured_count();
     uint32_t pcap_dropped = pcap_get_dropped_count();
@@ -2159,9 +2168,7 @@ static esp_err_t config_get_handler(httpd_req_t *req)
 
     /* Chunk 2: Logout button (if authenticated) */
     if (session_active && password_protection_enabled) {
-        SEND_CHUNK(req,
-            "<a href='/?logout=1' style='padding: 0.4rem 1rem; background: rgba(255,82,82,0.15); color: #ff5252; border: 1px solid #ff5252; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500;'>Logout</a>",
-            HTTPD_RESP_USE_STRLEN);
+        SEND_CHUNK(req, THEME_LOGOUT, HTTPD_RESP_USE_STRLEN);
     }
 
     /* Chunk 3: JavaScript */
@@ -2184,7 +2191,8 @@ static esp_err_t config_get_handler(httpd_req_t *req)
 #if CONFIG_ETH_UPLINK
     /* Chunk 5: ETH info */
     SEND_CHUNK(req,
-        "<h2>Uplink Settings</h2><table><tr><td>Mode:</td><td>Ethernet (LAN8720)</td></tr></table>",
+        "<div class='card'><div class='card-head'><h2>Uplink</h2><span class='meta'>ETH</span></div>"
+        "<table class='form-table'><tr><td>Mode</td><td>Ethernet (LAN8720)</td></tr></table></div>",
         HTTPD_RESP_USE_STRLEN);
 #else
     /* Chunk 5: STA Settings */
@@ -2235,7 +2243,7 @@ static esp_err_t config_get_handler(httpd_req_t *req)
 
     /* Chunk 8a: Antenna switch */
     {
-        const char* ant_color = (antenna_gpio < 0) ? "#888" : "#4caf50";
+        const char* ant_color = (antenna_gpio < 0) ? "muted-text" : "ok-text";
         const char* ant_text;
         if (antenna_gpio < 0) {
             ant_text = "Disabled";
@@ -2273,7 +2281,7 @@ static esp_err_t config_get_handler(httpd_req_t *req)
         const esp_partition_t *running = esp_ota_get_running_partition();
         const esp_app_desc_t *app_desc = esp_app_get_description();
         snprintf(section, sizeof(section),
-            "<table>"
+            "<table class='form-table'>"
             "<tr><td>Running</td><td>%s</td></tr>"
             "<tr><td>Chip</td><td>%s</td></tr>"
             "<tr><td>Version</td><td>%s</td></tr>"
@@ -2542,7 +2550,7 @@ static esp_err_t mappings_get_handler(httpd_req_t *req)
     }
 
     /* Reusable buffer for building individual rows */
-    char row[384];
+    char row[512];
 
     /* --- Begin chunked response --- */
 
@@ -2568,9 +2576,7 @@ static esp_err_t mappings_get_handler(httpd_req_t *req)
 
     /* Chunk 4: Logout button (if authenticated) */
     if (session_active && password_protection_enabled) {
-        SEND_CHUNK(req,
-            "<a href='/?logout=1' style='padding: 0.4rem 1rem; background: rgba(255,82,82,0.15); color: #ff5252; border: 1px solid #ff5252; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500;'>Logout</a>",
-            HTTPD_RESP_USE_STRLEN);
+        SEND_CHUNK(req, THEME_LOGOUT, HTTPD_RESP_USE_STRLEN);
     }
 
     /* Chunk 5: Connected clients table header */
@@ -2635,16 +2641,16 @@ static esp_err_t mappings_get_handler(httpd_req_t *req)
                 }
                 snprintf(row, sizeof(row),
                     "<tr>"
-                    "<td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
-                    "<td><button type='button' class='select-button' onclick=\"fillDhcpForm('%s','%s','%s')\">Select</button></td>"
+                    "<td class='mono'>%s</td><td class='mono'>%s</td><td>%s</td><td class='mono traffic-col'>%s</td>"
+                    "<td><button type='button' class='select-button' onclick=\"fillDhcpForm('%s','%s','%s')\">Reserve</button></td>"
                     "</tr>",
                     mac_str, ip_str, js_name[0] ? js_name : "-", traffic_str,
                     mac_str, clients[i].has_ip ? ip_str : "", js_name);
             } else {
                 snprintf(row, sizeof(row),
                     "<tr>"
-                    "<td>%s</td><td>%s</td><td>%s</td>"
-                    "<td><button type='button' class='select-button' onclick=\"fillDhcpForm('%s','%s','%s')\">Select</button></td>"
+                    "<td class='mono'>%s</td><td class='mono'>%s</td><td>%s</td>"
+                    "<td><button type='button' class='select-button' onclick=\"fillDhcpForm('%s','%s','%s')\">Reserve</button></td>"
                     "</tr>",
                     mac_str, ip_str, js_name[0] ? js_name : "-",
                     mac_str, clients[i].has_ip ? ip_str : "", js_name);
@@ -2654,8 +2660,8 @@ static esp_err_t mappings_get_handler(httpd_req_t *req)
     } else {
         SEND_CHUNK(req,
             client_stats_enabled
-                ? "<tr><td colspan='5' style='text-align:center; color:#888;'>No clients connected</td></tr>"
-                : "<tr><td colspan='4' style='text-align:center; color:#888;'>No clients connected</td></tr>",
+                ? "<tr><td colspan='5' class='empty'>No clients connected</td></tr>"
+                : "<tr><td colspan='4' class='empty'>No clients connected</td></tr>",
             HTTPD_RESP_USE_STRLEN);
     }
 
@@ -2670,7 +2676,7 @@ static esp_err_t mappings_get_handler(httpd_req_t *req)
         start_addr.addr = start_ip;
         end_addr.addr = end_ip;
         snprintf(row, sizeof(row),
-                 "<small style='color:#888;'>Pool: " IPSTR " - " IPSTR "</small>",
+                 "<p class='hint' style='font-family:var(--mono);font-size:10.5px;'>Pool " IPSTR " &#8211; " IPSTR "</p>",
                  IP2STR(&start_addr), IP2STR(&end_addr));
         SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
     }
@@ -2693,7 +2699,7 @@ static esp_err_t mappings_get_handler(httpd_req_t *req)
             has_reservations = true;
             char ip_col[64];
             if (dhcp_reservations[i].ip == 0) {
-                snprintf(ip_col, sizeof(ip_col), "<span style='color:#ff5252;font-weight:bold;'>BLOCKED</span>");
+                snprintf(ip_col, sizeof(ip_col), "<span class='bad-text' style='font-weight:600;'>Blocked</span>");
             } else {
                 esp_ip4_addr_t addr;
                 addr.addr = dhcp_reservations[i].ip;
@@ -2702,8 +2708,8 @@ static esp_err_t mappings_get_handler(httpd_req_t *req)
 
             snprintf(row, sizeof(row),
                 "<tr>"
-                "<td>%02X:%02X:%02X:%02X:%02X:%02X</td>"
-                "<td>%s</td>"
+                "<td class='mono'>%02X:%02X:%02X:%02X:%02X:%02X</td>"
+                "<td class='mono'>%s</td>"
                 "<td>%s</td>"
                 "<td><a href='/mappings?del_dhcp_mac=%02X:%02X:%02X:%02X:%02X:%02X' class='red-button'>Delete</a></td>"
                 "</tr>",
@@ -2722,7 +2728,7 @@ static esp_err_t mappings_get_handler(httpd_req_t *req)
 
     if (!has_reservations) {
         SEND_CHUNK(req,
-            "<tr><td colspan='4' style='text-align:center; color:#888;'>No DHCP reservations configured</td></tr>",
+            "<tr><td colspan='4' class='empty'>No DHCP reservations configured</td></tr>",
             HTTPD_RESP_USE_STRLEN);
     }
 
@@ -2752,9 +2758,9 @@ static esp_err_t mappings_get_handler(httpd_req_t *req)
                     "<tr>"
                     "<td>%s</td>"
                     "<td>%s</td>"
-                    "<td>%d</td>"
-                    "<td>%s</td>"
-                    "<td>%d</td>"
+                    "<td class='mono'>%d</td>"
+                    "<td class='mono'>%s</td>"
+                    "<td class='mono'>%d</td>"
                     "<td><a href='/mappings?del_proto=%s&del_port=%d' class='red-button'>Delete</a></td>"
                     "</tr>",
 #if CONFIG_ETH_UPLINK
@@ -2775,14 +2781,14 @@ static esp_err_t mappings_get_handler(httpd_req_t *req)
 
         if (!has_mappings) {
             SEND_CHUNK(req,
-                "<tr><td colspan='6' style='text-align:center; color:#888;'>No port mappings configured</td></tr>",
+                "<tr><td colspan='6' class='empty'>No port mappings configured</td></tr>",
                 HTTPD_RESP_USE_STRLEN);
         }
 
         SEND_CHUNK(req, MAPPINGS_CHUNK_PORTFWD_TAIL, HTTPD_RESP_USE_STRLEN);
     } else {
         SEND_CHUNK(req,
-            "<div class='section'><p style='color:#888; padding: 0.5rem 0;'>Port forwarding is not available in routed mode (NAT disabled).</p></div>",
+            "<div class='card'><div class='card-head'><h2>Port forwarding</h2></div><div class='card-body'><p class='hint'>Port forwarding is not available in routed mode (NAT disabled).</p></div></div>",
             HTTPD_RESP_USE_STRLEN);
     }
 
@@ -2977,7 +2983,7 @@ static esp_err_t firewall_get_handler(httpd_req_t *req)
     }
 
     /* Reusable buffer for building individual elements */
-    char row[384];
+    char row[512];
 
     /* --- Begin chunked response --- */
 
@@ -3003,9 +3009,7 @@ static esp_err_t firewall_get_handler(httpd_req_t *req)
 
     /* Chunk 4: Logout button (if authenticated) */
     if (session_active && password_protection_enabled) {
-        SEND_CHUNK(req,
-            "<a href='/?logout=1' style='padding: 0.4rem 1rem; background: rgba(255,82,82,0.15); color: #ff5252; border: 1px solid #ff5252; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500;'>Logout</a>",
-            HTTPD_RESP_USE_STRLEN);
+        SEND_CHUNK(req, THEME_LOGOUT, HTTPD_RESP_USE_STRLEN);
     }
 
     /* Chunk 5: Description text */
@@ -3031,27 +3035,28 @@ static esp_err_t firewall_get_handler(httpd_req_t *req)
 
         /* Section header with stats (no lock held) */
         snprintf(row, sizeof(row),
-            "<div class='acl-section'>"
-            "<h3>%s</h3>"
+            "<div class='card'>"
+            "<div class='card-head'><h2>%s</h2>"
+            "<a href='/firewall?clear_acl=%d' class='orange-button'>Clear</a></div>"
+            "<div class='card-body' style='padding:10px 16px 0;'>"
             "<div class='stats'>"
-            "<span class='allowed'>Allowed: %lu</span>"
-            "<span class='denied'>Denied: %lu</span>"
-            "<span>No match: %lu</span>"
-            "<a href='/firewall?clear_acl=%d' class='orange-button' style='float:right;'>Clear</a>"
-            "</div>",
+            "<span class='allowed'>Allowed %lu</span>"
+            "<span class='denied'>Denied %lu</span>"
+            "<span>No match %lu</span>"
+            "</div></div>",
             list_desc,
+            list_no,
             (unsigned long)stats_copy.packets_allowed,
             (unsigned long)stats_copy.packets_denied,
-            (unsigned long)stats_copy.packets_nomatch,
-            list_no);
+            (unsigned long)stats_copy.packets_nomatch);
         SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
 
         /* Rules table header */
         SEND_CHUNK(req,
-            "<table class='data-table'>"
+            "<div class='table-scroll'><table class='data-table'>"
             "<thead><tr>"
-            "<th>#</th><th>Proto</th><th>Source</th><th>SPort</th>"
-            "<th>Dest</th><th>DPort</th><th>Action</th><th>Hits</th><th></th>"
+            "<th class='col-idx'>#</th><th>Proto</th><th>Source</th><th class='col-sport'>Sport</th>"
+            "<th>Dest</th><th class='col-dport'>Dport</th><th>Action</th><th class='col-hits'>Hits</th><th></th>"
             "</tr></thead><tbody>",
             HTTPD_RESP_USE_STRLEN);
 
@@ -3103,34 +3108,37 @@ static esp_err_t firewall_get_handler(httpd_req_t *req)
 
             /* Format action */
             const char *action_str;
+            const char *action_cls;
             uint8_t action = rules_copy[i].allow & 0x01;
             uint8_t monitor = rules_copy[i].allow & ACL_MONITOR;
             if (action == ACL_ALLOW) {
-                action_str = monitor ? "Allow+M" : "Allow";
+                action_str = monitor ? "Allow + monitor" : "Allow";
+                action_cls = "ok-text";
             } else {
-                action_str = monitor ? "Deny+M" : "Deny";
+                action_str = monitor ? "Deny + monitor" : "Deny";
+                action_cls = "bad-text";
             }
 
             snprintf(row, sizeof(row),
                 "<tr>"
-                "<td>%d</td><td>%s</td><td>%s</td><td>%s</td>"
-                "<td>%s</td><td>%s</td><td>%s</td><td>%lu</td>"
-                "<td><a href='/firewall?del_acl=%d&del_idx=%d' class='red-button'>Del</a></td>"
+                "<td class='mono col-idx'>%d</td><td>%s</td><td>%s</td><td class='mono col-sport'>%s</td>"
+                "<td>%s</td><td class='mono col-dport'>%s</td><td><span class='%s'>%s</span></td><td class='mono col-hits'>%lu</td>"
+                "<td><a href='/firewall?del_acl=%d&del_idx=%d' class='red-button'>Delete</a></td>"
                 "</tr>",
                 i, proto_str, src_str, s_port_str,
-                dst_str, d_port_str, action_str, (unsigned long)rules_copy[i].hit_count,
+                dst_str, d_port_str, action_cls, action_str, (unsigned long)rules_copy[i].hit_count,
                 list_no, i);
             SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
         }
 
         if (rule_count == 0) {
             SEND_CHUNK(req,
-                "<tr><td colspan='9' style='text-align:center; color:#888;'>No rules (all packets allowed)</td></tr>",
+                "<tr><td colspan='9' class='empty'>No rules (all packets allowed)</td></tr>",
                 HTTPD_RESP_USE_STRLEN);
         }
 
         /* Close table and section */
-        SEND_CHUNK(req, "</tbody></table></div>", HTTPD_RESP_USE_STRLEN);
+        SEND_CHUNK(req, "</tbody></table></div></div>", HTTPD_RESP_USE_STRLEN);
     }
 
     /* Chunk 7: Add form and footer */
@@ -3252,13 +3260,11 @@ static esp_err_t scan_get_handler(httpd_req_t *req)
     if (ap_count == 0) {
         if (scan_in_progress) {
             snprintf(scan_html, sizeof(scan_html),
-                "<tr><td colspan='%d' style='text-align:center; color:#00d9ff;'>"
-                "<span style='display:inline-block; animation: pulse 1s infinite;'>📡 Scanning...</span>"
-                "</td></tr>",
+                "<tr><td colspan='%d' class='empty'><span class='scanning'>Scanning...</span></td></tr>",
                 can_connect ? 5 : 4);
         } else {
             snprintf(scan_html, sizeof(scan_html),
-                "<tr><td colspan='%d' style='text-align:center; color:#888;'>No networks found</td></tr>",
+                "<tr><td colspan='%d' class='empty'>No networks found</td></tr>",
                 can_connect ? 5 : 4);
         }
     } else {
@@ -3323,7 +3329,7 @@ static esp_err_t scan_get_handler(httpd_req_t *req)
             /* Channel / band info */
             char ch_info[80];
 #if WIFI_HAS_5GHZ
-            snprintf(ch_info, sizeof(ch_info), "%d <span style='color:#888;font-size:0.75rem;'>%s</span>",
+            snprintf(ch_info, sizeof(ch_info), "%d <span class='muted-text'>%s</span>",
                      ap_list[i].primary, ap_list[i].primary > 14 ? "5G" : "2.4G");
 #else
             snprintf(ch_info, sizeof(ch_info), "%d", ap_list[i].primary);
@@ -3331,9 +3337,9 @@ static esp_err_t scan_get_handler(httpd_req_t *req)
 
             html_offset += snprintf(scan_html + html_offset, sizeof(scan_html) - html_offset,
                 "<tr>"
-                "<td>%s</td>"
-                "<td style='white-space:nowrap;'>%s<span style='color:#888;font-size:0.8rem;margin-left:0.5em;'>%d dBm</span></td>"
-                "<td>%s</td>"
+                "<td class='name'>%s</td>"
+                "<td style='white-space:nowrap;'>%s <span class='muted-text mono' style='font-size:10px;'>%d dBm</span></td>"
+                "<td class='mono'>%s</td>"
                 "<td>%s</td>"
                 "%s"
                 "</tr>",
@@ -3495,7 +3501,7 @@ static esp_err_t setup_get_handler(httpd_req_t *req)
 
     /* Sized for the worst case once the two escaped SSID fields are fixed-size
      * stack buffers (~1500 bytes); the default 1024 would risk truncation. */
-    char section[1536];
+    char section[2048];
 #if CONFIG_ETH_UPLINK
     snprintf(section, sizeof(section), SETUP_CHUNK_FORM,
         safe_ap_ssid, "", "");
@@ -3628,46 +3634,44 @@ static esp_err_t vpn_get_handler(httpd_req_t *req)
 
     /* Logout button if authenticated */
     if (session_active && password_protection_enabled) {
-        SEND_CHUNK(req,
-            "<a href='/?logout=1' style='padding: 0.4rem 1rem; background: rgba(255,82,82,0.15); color: #ff5252; border: 1px solid #ff5252; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500;'>Logout</a>",
-            HTTPD_RESP_USE_STRLEN);
+        SEND_CHUNK(req, THEME_LOGOUT, HTTPD_RESP_USE_STRLEN);
     }
 
     /* Mid (script) */
     SEND_CHUNK(req, VPN_CHUNK_MID, HTTPD_RESP_USE_STRLEN);
 
     /* Status section */
-    SEND_CHUNK(req, "<h2>Status</h2><div class='status-table'><table>", HTTPD_RESP_USE_STRLEN);
+    SEND_CHUNK(req, "<div class='card'><div class='card-head'><h2>Status</h2></div><table class='status-table'>", HTTPD_RESP_USE_STRLEN);
 
     if (vpn_enabled) {
-        const char *state, *color;
+        const char *state, *state_cls;
         if (vpn_is_connected()) {
-            state = "Connected"; color = "#4caf50";
+            state = "Connected"; state_cls = "ok-text";
         } else if (vpn_connected) {
-            state = "Handshake Pending"; color = "#ffc107";
+            state = "Handshake pending"; state_cls = "warn-text";
         } else {
-            state = "Disconnected"; color = "#f44336";
+            state = "Disconnected"; state_cls = "bad-text";
         }
-        snprintf(row, VPN_BUF_SIZE, "<tr><td>VPN:</td><td><strong style='color:%s;'>%s</strong></td></tr>", color, state);
+        snprintf(row, VPN_BUF_SIZE, "<tr><td>Tunnel</td><td><span class='%s'>%s</span></td></tr>", state_cls, state);
     } else {
-        snprintf(row, VPN_BUF_SIZE, "<tr><td>VPN:</td><td><strong style='color:#888;'>Disabled</strong></td></tr>");
+        snprintf(row, VPN_BUF_SIZE, "<tr><td>Tunnel</td><td><span class='muted-text'>Disabled</span></td></tr>");
     }
     SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
 
     if (vpn_address && vpn_address[0]) {
-        snprintf(row, VPN_BUF_SIZE, "<tr><td>Tunnel IP:</td><td>%s</td></tr>", vpn_address);
+        snprintf(row, VPN_BUF_SIZE, "<tr><td>Tunnel address</td><td class='mono'>%s</td></tr>", vpn_address);
         SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
     }
-    snprintf(row, VPN_BUF_SIZE, "<tr><td>MSS Clamp:</td><td>%u</td></tr><tr><td>Path MTU:</td><td>%u</td></tr>",
+    snprintf(row, VPN_BUF_SIZE, "<tr><td>MSS clamp</td><td class='mono'>%u</td></tr><tr><td>Path MTU</td><td class='mono'>%u</td></tr>",
              ap_mss_clamp, ap_pmtu);
     SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
 
-    snprintf(row, VPN_BUF_SIZE, "<tr><td>Kill Switch:</td><td><strong style='color:%s;'>%s</strong></td></tr>",
-             vpn_killswitch ? "#4caf50" : "#888", vpn_killswitch ? "On" : "Off");
+    snprintf(row, VPN_BUF_SIZE, "<tr><td>Kill switch</td><td><span class='%s'>%s</span></td></tr>",
+             vpn_killswitch ? "ok-text" : "muted-text", vpn_killswitch ? "On" : "Off");
     SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
 
-    snprintf(row, VPN_BUF_SIZE, "<tr><td>Route All:</td><td><strong style='color:%s;'>%s</strong></td></tr>",
-             vpn_route_all ? "#4caf50" : "#2196f3", vpn_route_all ? "Yes" : "No (split tunnel)");
+    snprintf(row, VPN_BUF_SIZE, "<tr><td>Route all</td><td><span class='%s'>%s</span></td></tr>",
+             vpn_route_all ? "ok-text" : "muted-text", vpn_route_all ? "Yes" : "No (split tunnel)");
     SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
 
     SEND_CHUNK(req, "</table></div>", HTTPD_RESP_USE_STRLEN);
@@ -3720,7 +3724,7 @@ static esp_err_t vpn_get_handler(httpd_req_t *req)
 
     snprintf(row, VPN_BUF_SIZE,
         "<tr><td>MTU</td><td><input type='number' name='vpn_mtu' value='%d' min='%d' max='%d'/>"
-        "<br><small>Lower (e.g. 1280-1320) if the tunnel is up but traffic stalls (CGNAT, PPPoE, LTE)</small></td></tr>",
+        "<p class='hint-block'>Lower (e.g. 1280-1320) if the tunnel is up but traffic stalls (CGNAT, PPPoE, LTE).</p></td></tr>",
         (int)vpn_mtu, VPN_MTU_MIN, VPN_MTU_MAX);
     SEND_CHUNK(req, row, HTTPD_RESP_USE_STRLEN);
 
@@ -3811,6 +3815,7 @@ httpd_handle_t start_webserver(uint16_t port)
         httpd_register_uri_handler(server, &setupp);
 #endif
         httpd_register_uri_handler(server, &favicon_uri);
+        httpd_register_uri_handler(server, &theme_css_uri);
         httpd_register_uri_handler(server, &config_exportp);
         httpd_register_uri_handler(server, &config_importp);
         httpd_register_uri_handler(server, &vpn_importp);
