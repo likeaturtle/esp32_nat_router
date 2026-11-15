@@ -61,7 +61,3 @@ unknown label simply stays English. Nothing is added to NVS or config export.
 - The page shell is responsive at 360–1200 px; wide tables scroll horizontally
   and selected columns collapse on phones.
 
-## Preview
-
-Static previews rendered from the real page templates (with sample data) are in
-`ui_style_samples/shots/implemented-*.png`.
