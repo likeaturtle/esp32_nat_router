@@ -158,6 +158,21 @@ idf.py -B build_esp32s3 \
 - 编译结束会打印应用占用 ota_0 的比例；默认分区表下 ota_0 为 1536 KiB。
 - 需要一次编译全部芯片目标时，用 `./build_all_targets.sh`。
 
+也可以直接用仓库根目录的 S3 脚本（自动激活 ESP-IDF 5.5.4、检查目标芯片并汇总产物；
+除 `--help` 外，构建/烧录/清理/`--dry-run` 都会先自动激活，不需要提前 `source`）：
+
+```bash
+./build_esp32s3.sh                    # 构建（首次会自动配置 target）
+./build_esp32s3.sh --clean            # 先 fullclean 再构建
+./build_esp32s3.sh --flash            # 构建后烧录（自动选择串口）
+./build_esp32s3.sh -p /dev/cu.usbmodem1101 --monitor
+./build_esp32s3.sh --dry-run          # 只打印 idf.py 命令
+```
+
+脚本使用 `build_esp32s3/` 和 `sdkconfig.esp32s3`，与上面的手动命令一致；激活默认走
+`~/.espressif/tools/activate_idf_v5.5.4.sh`，路径不同时可用
+`IDF_ACTIVATE=/path/to/activate_idf_v5.5.4.sh` 指定。
+
 ### 3. 烧录
 
 先确认端口。多数 S3 开发板有两个 USB 口：
