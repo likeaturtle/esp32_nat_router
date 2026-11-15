@@ -14,6 +14,7 @@
     "<title>" title "</title>" \
     "<link rel='icon' href='/favicon.png'>" \
     "<link rel='stylesheet' href='/style.css'>" \
+    "<script src='/i18n.js'></script>" \
     "</head><body>"
 
 /* Same as THEME_DOC_OPEN, plus an auto-refresh interval (seconds is a
@@ -25,6 +26,7 @@
     "<title>" title "</title>" \
     "<link rel='icon' href='/favicon.png'>" \
     "<link rel='stylesheet' href='/style.css'>" \
+    "<script src='/i18n.js'></script>" \
     "</head><body>"
 
 /* Brand bar, ends with the action slot open so the logout link can be
@@ -49,7 +51,7 @@
 
 #define THEME_FOOTER \
     "<footer class='foot'><span>ESP32 NAT Router</span><span class='sep'>/</span>" \
-    "<a href='https://github.com/martin-ger/esp32_nat_router' target='_blank' rel='noopener'>Source</a></footer>"
+    "<a href='https://github.com/martin-ger/esp32_nat_router' target='_blank' rel='noopener'>Source code</a></footer>"
 
 #define THEME_HOME_ROW \
     "<div class='home-row'><a class='btn-home' href='/'>&#8592; Home</a></div>"

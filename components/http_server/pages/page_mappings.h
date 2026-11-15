@@ -66,7 +66,7 @@
     "<label style='display:inline-flex;align-items:center;gap:8px;cursor:pointer;'><input type='checkbox' name='known_only' value='1' "
 
 #define MAPPINGS_CHUNK_KNOWN_POST " \
-onchange=\"if(!this.checked||confirm('Only clients with a fixed-IP reservation below will be able to connect. Make sure your own device is listed.'))this.form.submit();else this.checked=false;\"> \
+onchange=\"if(!this.checked||confirm(t('Only clients with a fixed-IP reservation below will be able to connect. Make sure your own device is listed.')))this.form.submit();else this.checked=false;\"> \
 <span>Allow only known clients</span></label> \
 <p class='hint-block'>MACs with a fixed-IP reservation below; applies to new connections.</p>\
 </form>"

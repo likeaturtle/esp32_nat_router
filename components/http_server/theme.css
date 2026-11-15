@@ -681,3 +681,25 @@ fieldset { border: 0; margin: 0; padding: 0; }
   .data-table th, .data-table td { padding-left: 8px; padding-right: 8px; }
   .table-scroll { margin: 0 -1px; }
 }
+
+/* ---------- language switch (i18n) ---------- */
+/* /i18n.js sets this class synchronously in <head> for Chinese, then removes
+ * it after walking the DOM. JS disabled or English: no class, nothing hides. */
+html.i18n-pending body { visibility: hidden; }
+.lang-toggle {
+  padding: 5px 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  line-height: 1;
+  cursor: pointer;
+}
+.lang-toggle:hover { border-color: var(--ink-2); color: var(--ink); }
+html[lang='zh-CN'] .eyebrow,
+html[lang='zh-CN'] .meta { letter-spacing: .03em; }
+html[lang='zh-CN'] .brand-sub { letter-spacing: 0; }

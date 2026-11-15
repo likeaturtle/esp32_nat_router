@@ -244,37 +244,37 @@
     "<p class='hint'>Redirecting to the home page...</p>" \
     "</div>" \
     "<script>" \
-    "document.getElementById('otaFile').addEventListener('change',function(){document.getElementById('otaFileName').textContent=this.files[0]?this.files[0].name:'Choose .bin file...';});" \
+    "document.getElementById('otaFile').addEventListener('change',function(){document.getElementById('otaFileName').textContent=this.files[0]?this.files[0].name:t('Choose .bin file...');});" \
     "function uploadOTA(){" \
     "var f=document.getElementById('otaFile').files[0];" \
-    "if(!f){document.getElementById('otaStatus').textContent='Select a firmware file first.';return;}" \
-    "if(!f.name.endsWith('.bin')){document.getElementById('otaStatus').innerHTML='<span class=\"bad-text\">Please select a .bin file</span>';return;}" \
-    "document.getElementById('otaStatus').textContent='Uploading...';" \
+    "if(!f){document.getElementById('otaStatus').textContent=t('Select a firmware file first.');return;}" \
+    "if(!f.name.endsWith('.bin')){document.getElementById('otaStatus').innerHTML='<span class=\"bad-text\">'+t('Please select a .bin file')+'</span>';return;}" \
+    "document.getElementById('otaStatus').textContent=t('Uploading...');" \
     "document.getElementById('otaBar').style.display='block';" \
     "var xhr=new XMLHttpRequest();" \
     "xhr.open('POST','/api/ota-upload',true);" \
-    "xhr.upload.onprogress=function(e){if(e.lengthComputable){var pct=Math.round(e.loaded/e.total*100);document.getElementById('otaBarFill').style.width=pct+'%';document.getElementById('otaStatus').textContent='Uploading... '+pct+'%';}};" \
+    "xhr.upload.onprogress=function(e){if(e.lengthComputable){var pct=Math.round(e.loaded/e.total*100);document.getElementById('otaBarFill').style.width=pct+'%';document.getElementById('otaStatus').textContent=t('Uploading...')+' '+pct+'%';}};" \
     "xhr.onload=function(){" \
     "try{var d=JSON.parse(xhr.responseText);" \
     "if(d.ok){" \
     "document.getElementById('mainContent').style.display='none';" \
     "document.getElementById('rebootScreen').style.display='block';" \
-    "document.getElementById('rebootTitle').textContent='Firmware updated';" \
-    "document.getElementById('rebootMsg').textContent='The device is rebooting with new firmware.';" \
+    "document.getElementById('rebootTitle').textContent=t('Firmware updated');" \
+    "document.getElementById('rebootMsg').textContent=t('The device is rebooting with new firmware.');" \
     "var c=10;var el=document.getElementById('countdown');" \
-    "var t=setInterval(function(){c--;el.textContent=c;if(c<=0){clearInterval(t);window.location.href='/';}},1000);" \
+    "var timer=setInterval(function(){c--;el.textContent=c;if(c<=0){clearInterval(timer);window.location.href='/';}},1000);" \
     "}else{" \
     "document.getElementById('otaBarFill').style.width='0';document.getElementById('otaBar').style.display='none';" \
-    "document.getElementById('otaStatus').innerHTML='<span class=\"bad-text\">'+d.msg+'</span>';" \
-    "}}catch(e){document.getElementById('otaStatus').innerHTML='<span class=\"bad-text\">Upload failed</span>';}" \
+    "document.getElementById('otaStatus').innerHTML='<span class=\"bad-text\">'+t(d.msg)+'</span>';" \
+    "}}catch(e){document.getElementById('otaStatus').innerHTML='<span class=\"bad-text\">'+t('Upload failed')+'</span>';}" \
     "};" \
-    "xhr.onerror=function(){document.getElementById('otaStatus').innerHTML='<span class=\"bad-text\">Connection error</span>';};" \
+    "xhr.onerror=function(){document.getElementById('otaStatus').innerHTML='<span class=\"bad-text\">'+t('Connection error')+'</span>';};" \
     "xhr.send(f);" \
     "}" \
-    "document.getElementById('cfgFile').addEventListener('change',function(){document.getElementById('cfgFileName').textContent=this.files[0]?this.files[0].name:'Choose file...';});" \
+    "document.getElementById('cfgFile').addEventListener('change',function(){document.getElementById('cfgFileName').textContent=this.files[0]?this.files[0].name:t('Choose file...');});" \
     "function downloadConfig(){" \
     "var pass=document.getElementById('expPass').value;" \
-    "document.getElementById('exportStatus').textContent='Downloading...';" \
+    "document.getElementById('exportStatus').textContent=t('Downloading...');" \
     "fetch('/api/config-export',{method:'POST',body:JSON.stringify({pass:pass}),headers:{'Content-Type':'application/json'}})" \
     ".then(function(res){" \
     "if(!res.ok){return res.text().then(function(t){throw new Error(t);});}" \
@@ -290,17 +290,17 @@
     "a.href=url;a.download=obj.fn;" \
     "document.body.appendChild(a);a.click();" \
     "setTimeout(function(){URL.revokeObjectURL(url);a.remove();},100);" \
-    "document.getElementById('exportStatus').textContent=pass?'Downloaded (encrypted).':'Downloaded (plain).';" \
+    "document.getElementById('exportStatus').textContent=pass?t('Downloaded (encrypted).'):t('Downloaded (plain).');" \
     "})" \
-    ".catch(function(){document.getElementById('exportStatus').innerHTML='<span class=\"bad-text\">Export failed</span>';});" \
+    ".catch(function(){document.getElementById('exportStatus').innerHTML='<span class=\"bad-text\">'+t('Export failed')+'</span>';});" \
     "}" \
     "function uploadConfig(){" \
     "var f=document.getElementById('cfgFile').files[0];" \
     "var pass=document.getElementById('impPass').value;" \
-    "if(!f){document.getElementById('importStatus').textContent='Select a file first.';return;}" \
+    "if(!f){document.getElementById('importStatus').textContent=t('Select a file first.');return;}" \
     "var r=new FileReader();" \
     "r.onload=function(){" \
-    "document.getElementById('importStatus').textContent='Uploading...';" \
+    "document.getElementById('importStatus').textContent=t('Uploading...');" \
     "var hdrs={'Content-Type':'application/json'};" \
     "if(pass)hdrs['X-Config-Pass']=pass;" \
     "fetch('/api/config-import',{method:'POST',body:r.result,headers:hdrs})" \
@@ -309,12 +309,12 @@
     "if(d.ok){" \
     "document.getElementById('mainContent').style.display='none';" \
     "document.getElementById('rebootScreen').style.display='block';" \
-    "document.getElementById('rebootTitle').textContent='Config imported';" \
-    "document.getElementById('rebootMsg').textContent='The device is rebooting to apply the new configuration.';" \
+    "document.getElementById('rebootTitle').textContent=t('Config imported');" \
+    "document.getElementById('rebootMsg').textContent=t('The device is rebooting to apply the new configuration.');" \
     "var c=5;var el=document.getElementById('countdown');" \
-    "var t=setInterval(function(){c--;el.textContent=c;if(c<=0){clearInterval(t);window.location.href='/';}},1000);" \
+    "var timer=setInterval(function(){c--;el.textContent=c;if(c<=0){clearInterval(timer);window.location.href='/';}},1000);" \
     "}else{" \
-    "document.getElementById('importStatus').innerHTML='<span class=\"bad-text\">'+d.msg+'</span>';" \
+    "document.getElementById('importStatus').innerHTML='<span class=\"bad-text\">'+t(d.msg)+'</span>';" \
     "}" \
     "});" \
     "};" \
@@ -339,7 +339,7 @@
 #define CONFIG_CHUNK_DANGER_COMMON_TAIL \
     "<label><input type='checkbox' name='web_bind_vpn' value='1' %s> <span class='hint'>VPN</span></label>" \
     "</td></tr>" \
-    "<tr><td colspan='2'><input type='submit' value='Save access' class='red-button' onclick='return confirm(\"Restricting access may lock you out. Continue?\");'/></td></tr>" \
+    "<tr><td colspan='2'><input type='submit' value='Save access' class='red-button' onclick='return confirm(t(\"Restricting access may lock you out. Continue?\"));'/></td></tr>" \
     "</table>" \
     "</form>" \
     "<h3>Disable web interface</h3>" \
@@ -347,7 +347,7 @@
     "<form action='' method='GET'>" \
     "<table class='form-table'>" \
     "<tr><td>Disable</td>" \
-    "<td><input type='submit' name='disable_interface' value='Disable web UI' class='red-button' onclick='return confirm(\"Are you sure? The web interface will be disabled and can only be re-enabled via the console.\");'/></td></tr>" \
+    "<td><input type='submit' name='disable_interface' value='Disable web UI' class='red-button' onclick='return confirm(t(\"Are you sure? The web interface will be disabled and can only be re-enabled via the console.\"));'/></td></tr>" \
     "</table>" \
     "</form>" \
     "</div>" \

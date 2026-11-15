@@ -38,6 +38,7 @@
 
 #include "pages.h"
 #include "theme_css.h"
+#include "i18n_js.h"
 #include "favicon_png.h"
 #include "router_globals.h"
 #include "vpn_config.h"
@@ -1217,6 +1218,21 @@ static const httpd_uri_t theme_css_uri = {
     .uri       = "/style.css",
     .method    = HTTP_GET,
     .handler   = theme_css_get_handler,
+    .user_ctx  = NULL
+};
+
+/* English-keyed translation dictionary + DOM walker (see i18n/). */
+static esp_err_t i18n_js_get_handler(httpd_req_t *req) {
+    httpd_resp_set_type(req, "application/javascript; charset=utf-8");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
+    httpd_resp_send(req, i18n_js, i18n_js_len);
+    return ESP_OK;
+}
+
+static const httpd_uri_t i18n_js_uri = {
+    .uri       = "/i18n.js",
+    .method    = HTTP_GET,
+    .handler   = i18n_js_get_handler,
     .user_ctx  = NULL
 };
 
@@ -3816,6 +3832,7 @@ httpd_handle_t start_webserver(uint16_t port)
 #endif
         httpd_register_uri_handler(server, &favicon_uri);
         httpd_register_uri_handler(server, &theme_css_uri);
+        httpd_register_uri_handler(server, &i18n_js_uri);
         httpd_register_uri_handler(server, &config_exportp);
         httpd_register_uri_handler(server, &config_importp);
         httpd_register_uri_handler(server, &vpn_importp);

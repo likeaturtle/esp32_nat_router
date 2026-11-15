@@ -31,14 +31,14 @@
     "</div>" \
     "<script>" \
     "function importWg(){" \
-    "var t=document.getElementById('wgconf').value;" \
+    "var conf=document.getElementById('wgconf').value;" \
     "var m=document.getElementById('wgmsg');" \
-    "if(!t.trim()){m.className='hint bad-text';m.textContent='Paste a config first.';return;}" \
-    "m.className='hint';m.textContent='Importing...';" \
-    "fetch('/api/vpn-import',{method:'POST',body:t}).then(function(r){return r.json();}).then(function(d){" \
-    "if(d.ok){m.className='hint ok-text';m.textContent=d.msg;setTimeout(function(){location.href='/';},10000);}" \
-    "else{m.className='hint bad-text';m.textContent=d.msg||'Import failed';}" \
-    "}).catch(function(){m.className='hint bad-text';m.textContent='Request failed';});" \
+    "if(!conf.trim()){m.className='hint bad-text';m.textContent=t('Paste a config first.');return;}" \
+    "m.className='hint';m.textContent=t('Importing...');" \
+    "fetch('/api/vpn-import',{method:'POST',body:conf}).then(function(r){return r.json();}).then(function(d){" \
+    "if(d.ok){m.className='hint ok-text';m.textContent=t(d.msg);setTimeout(function(){location.href='/';},10000);}" \
+    "else{m.className='hint bad-text';m.textContent=t(d.msg||'Import failed');}" \
+    "}).catch(function(){m.className='hint bad-text';m.textContent=t('Request failed');});" \
     "}" \
     "</script>" \
     "</div>"

@@ -57,6 +57,6 @@
     "<span class='mono'>v%s</span><span class='sep'>/</span>" \
     "<span>Build %s %s</span><span class='sep'>/</span>" \
     "<span class='mono'>ESP-IDF " IDF_VER "</span><span class='sep'>/</span>" \
-    "<a href='https://github.com/martin-ger/esp32_nat_router' target='_blank' rel='noopener'>Source</a>" \
+    "<a href='https://github.com/martin-ger/esp32_nat_router' target='_blank' rel='noopener'>Source code</a>" \
     "</footer>" \
     "</main></body></html>"
